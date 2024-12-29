@@ -12,3 +12,15 @@ docs/
 
 # Dotenv file
 .env
+!.env.example
+
+# Dependencies
+node_modules/
+lib/
+
+# Coverage
+coverage/
+coverage.json
+
+# Mac OS
+.DS_Store
