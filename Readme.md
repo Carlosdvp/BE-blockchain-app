@@ -99,3 +99,16 @@ The initial structure is minimal but extensible, following best practices while 
 ## Stage 3: Off-chain Backend
 
 Approach for the backend system: We need to create a simple Express.js server that handles listings and bids in memory, following the requirements of not using persistent storage. The server will need to interface with both the blockchain and our frontend users.
+
+Basic server file structure
+
+src/
+├── controllers/      # Business logic for handling requests
+│   ├── listingController.ts
+│   └── bidController.ts
+├── routes/          # Route definitions and middleware
+│   ├── listingRoutes.ts
+│   └── bidRoutes.ts
+├── server.ts        # Main Express app configuration
+└── types.ts         # Our existing types file
+

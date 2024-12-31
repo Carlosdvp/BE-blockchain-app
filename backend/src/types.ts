@@ -23,3 +23,9 @@ export interface StoredListing extends Listing {
 export interface StoredBid extends Bid {
   timestamp: number;
 }
+
+// Type definition for route parameters
+export interface ListingParams {
+  nftContract: string;
+  tokenId: string;
+}
