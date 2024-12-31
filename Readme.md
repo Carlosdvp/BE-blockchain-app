@@ -80,3 +80,18 @@ The initial structure is minimal but extensible, following best practices while 
 
 ## Stage 2: Core Smart Contract Development
 
+### Tests
+
+1. Mock Contracts: We create simple versions of ERC721 and ERC20 tokens for testing. These allow us to mint tokens and manipulate states easily.
+2. Test Setup: The setUp function creates our fresh testing environment before each test:
+    - Deploys all contracts
+    - Mints an NFT to the seller
+    - Mints tokens to the buyer
+    - Sets up necessary approvals
+
+3. Signature Helpers: Two internal functions that help create properly formatted signatures for listings and bids using Foundry's vm.sign cheatcode.
+4. Main Test Cases:
+    - Successful auction settlement (fully implemented)
+    - Invalid signatures (to be implemented)
+    - Price verification (to be implemented)
+    - Authorization checks (to be implemented)

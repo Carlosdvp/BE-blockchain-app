@@ -60,7 +60,7 @@ contract NFTMarketplace {
   }
 
   // Core signature verification functions
-  function _hashListing(Listing calldata listing) internal view returns (bytes32) {
+  function _hashListing(Listing calldata listing) public view returns (bytes32) {
     return keccak256(
       abi.encodePacked(
         "\x19\x01",
@@ -78,7 +78,7 @@ contract NFTMarketplace {
     );
   }
 
-  function _hashBid(Bid calldata bid) internal view returns (bytes32) {
+  function _hashBid(Bid calldata bid) public view returns (bytes32) {
     return keccak256(
       abi.encodePacked(
         "\x19\x01",
