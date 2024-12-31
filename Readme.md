@@ -92,6 +92,10 @@ The initial structure is minimal but extensible, following best practices while 
 3. Signature Helpers: Two internal functions that help create properly formatted signatures for listings and bids using Foundry's vm.sign cheatcode.
 4. Main Test Cases:
     - Successful auction settlement (fully implemented)
-    - Invalid signatures (to be implemented)
-    - Price verification (to be implemented)
-    - Authorization checks (to be implemented)
+    - Invalid signatures (fully implemented)
+    - Price verification (fully implemented)
+    - Authorization checks (fully implemented)
+
+## Stage 3: Off-chain Backend
+
+Approach for the backend system: We need to create a simple Express.js server that handles listings and bids in memory, following the requirements of not using persistent storage. The server will need to interface with both the blockchain and our frontend users.

@@ -17,6 +17,8 @@ docs/
 # Dependencies
 node_modules/
 lib/
+dist/
+package-lock.json
 
 # Coverage
 coverage/
