@@ -116,6 +116,39 @@ src/
 
 This stage focused on creating comprehensive tests, deploying to Sepolia, and verifying contract functionality.
 
+### Forge deployment command
+
+forge script script/NFTMarketplace.s.sol:NFTMarketplaceScript \
+    --rpc-url https://eth-sepolia.g.alchemy.com/v2/IEJ6ax3RNiwZpJ6VHA_3LFgbbDOz3syX \
+    --fork-url https://eth-sepolia.g.alchemy.com/v2/IEJ6ax3RNiwZpJ6VHA_3LFgbbDOz3syX \
+    --broadcast \
+    --verify \
+    -vvvv
+
+forge script script/NFTMarketplace.s.sol:NFTMarketplaceScript \
+    --rpc-url $SEPOLIA_RPC_URL \
+    --sender $DEPLOYER_ADDRESS \
+    --private-key $PRIVATE_KEY \
+    --broadcast \
+    -vvvv
+
+forge script script/NFTMarketplace.s.sol:NFTMarketplaceScript \
+    --rpc-url https://eth-sepolia.g.alchemy.com/v2/IEJ6ax3RNiwZpJ6VHA_3LFgbbDOz3syX \
+    --fork-url https://eth-sepolia.g.alchemy.com/v2/IEJ6ax3RNiwZpJ6VHA_3LFgbbDOz3syX \
+    --sender $DEPLOYER_ADDRESS \
+    --private-key $PRIVATE_KEY \
+    --broadcast \
+    --verify \
+    -vvvv
+
+### Summary for this stage
+
+1. Successfully deployed the contract
+2. Got verification working
+3. Have a proper contract address for our backend integration
+
+
+
 ## Stage 5: Documentation and Cleanup
 
 The final stage involves documenting the system, cleaning up code, and preparing for deployment.
@@ -127,8 +160,6 @@ The final stage involves documenting the system, cleaning up code, and preparing
 
 1. Smart Contract Finalization
 
-Deploy to Sepolia testnet
-Verify contract on Etherscan
 Run full integration tests on testnet
 
 2. Backend Completion
