@@ -1,5 +1,8 @@
 import { ethers } from 'ethers'
 import { Listing, Bid } from './types'
+import dotenv from 'dotenv'
+
+dotenv.config()
 
 // Listing type hash from our smart contract
 const LISTING_TYPEHASH = ethers.keccak256(
@@ -12,23 +15,35 @@ const BID_TYPEHASH = ethers.keccak256(
 )
 
 // Domain separator params - should match smart contract
-const DOMAIN_SEPARATOR = ethers.keccak256(
-  ethers.AbiCoder.defaultAbiCoder().encode(
-    ["bytes32", "bytes32", "bytes32", "uint256", "address"],
-    [
-      ethers.keccak256(
-        ethers.toUtf8Bytes("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
-      ),
-      ethers.keccak256(ethers.toUtf8Bytes("NFTMarketplace")),
-      ethers.keccak256(ethers.toUtf8Bytes("1")),
-      1, // chainId
-      "0x..." // contract address
-    ]
+function getDomainSeparator(): string {
+  const chainId = process.env.CHAIN_ID ? parseInt(process.env.CHAIN_ID) : 11155111
+  const contractAddress = process.env.MARKETPLACE_CONTRACT_ADDRESS
+
+  if (!contractAddress || !ethers.isAddress(contractAddress)) {
+    throw new Error('Invalid or missing MARKETPLACE_CONTRACT_ADDRESS in environment variables')
+  }
+
+  return ethers.keccak256(
+    ethers.AbiCoder.defaultAbiCoder().encode(
+      ["bytes32", "bytes32", "bytes32", "uint256", "address"],
+      [
+        ethers.keccak256(
+          ethers.toUtf8Bytes("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)")
+        ),
+        ethers.keccak256(ethers.toUtf8Bytes("NFTMarketplace")),
+        ethers.keccak256(ethers.toUtf8Bytes("1")),
+        chainId,
+        contractAddress
+      ]
+    )
   )
-)
+}
 
 export async function verifySignature(data: Listing | Bid): Promise<boolean> {
   try {
+    // Get the domain separator using configuration values
+    const domainSeparator = getDomainSeparator()
+
     // Create the appropriate hash based on data type
     let typeHash
     let encodedData
@@ -38,10 +53,10 @@ export async function verifySignature(data: Listing | Bid): Promise<boolean> {
       encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
         ["address", "uint256", "address", "uint256"],
         [data.nftContract, data.tokenId, data.owner, data.minPrice]
-      );
+      )
     } else {
       // This is a bid
-      typeHash = BID_TYPEHASH;
+      typeHash = BID_TYPEHASH
       encodedData = ethers.AbiCoder.defaultAbiCoder().encode(
         ["address", "uint256", "address", "uint256", "address"],
         [data.nftContract, data.tokenId, data.bidder, data.amount, data.paymentToken]
@@ -54,7 +69,7 @@ export async function verifySignature(data: Listing | Bid): Promise<boolean> {
         ["bytes2", "bytes32", "bytes32"],
         [
           "0x1901",
-          DOMAIN_SEPARATOR,
+          domainSeparator,
           ethers.keccak256(
             ethers.solidityPacked(
               ["bytes32", "bytes32"],

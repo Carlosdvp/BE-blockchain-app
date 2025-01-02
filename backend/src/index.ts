@@ -1,5 +1,5 @@
-import { createApp, setupCleanupProcess } from './app'
 import dotenv from 'dotenv'
+import { createApp, setupCleanupProcess } from './app'
 
 dotenv.config()
 

@@ -199,112 +199,112 @@ contract NFTMarketplaceTest is Test {
     marketplace.settleAuction(listing, bid, ownerApproval);
   }
 
-function test_RevertBidTooLow() public {
-  // Create bid with amount less than minPrice
-  uint256 lowPrice = price / 2;  // Half of the minimum price
-  
-  bytes memory listingSig = _signListing(
-    address(nft),
-    tokenId,
-    seller,
-    price,  // Original price as minimum
-    sellerPrivateKey
-  );
+  function test_RevertBidTooLow() public {
+    // Create bid with amount less than minPrice
+    uint256 lowPrice = price / 2;  // Half of the minimum price
+    
+    bytes memory listingSig = _signListing(
+      address(nft),
+      tokenId,
+      seller,
+      price,  // Original price as minimum
+      sellerPrivateKey
+    );
 
-  bytes memory bidSig = _signBid(
-    address(nft),
-    tokenId,
-    buyer,
-    lowPrice,  // Lower bid amount
-    address(token),
-    buyerPrivateKey
-  );
+    bytes memory bidSig = _signBid(
+      address(nft),
+      tokenId,
+      buyer,
+      lowPrice,  // Lower bid amount
+      address(token),
+      buyerPrivateKey
+    );
 
-  NFTMarketplace.Listing memory listing = NFTMarketplace.Listing({
-    nftContract: address(nft),
-    tokenId: tokenId,
-    owner: seller,
-    minPrice: price,
-    signature: listingSig
-  });
+    NFTMarketplace.Listing memory listing = NFTMarketplace.Listing({
+      nftContract: address(nft),
+      tokenId: tokenId,
+      owner: seller,
+      minPrice: price,
+      signature: listingSig
+    });
 
-  NFTMarketplace.Bid memory bid = NFTMarketplace.Bid({
-    nftContract: address(nft),
-    tokenId: tokenId,
-    bidder: buyer,
-    amount: lowPrice,  // Lower than minPrice
-    paymentToken: address(token),
-    signature: bidSig
-  });
+    NFTMarketplace.Bid memory bid = NFTMarketplace.Bid({
+      nftContract: address(nft),
+      tokenId: tokenId,
+      bidder: buyer,
+      amount: lowPrice,  // Lower than minPrice
+      paymentToken: address(token),
+      signature: bidSig
+    });
 
-  bytes32 approvalHash = keccak256(abi.encodePacked(
-    marketplace._hashListing(listing),
-    marketplace._hashBid(bid)
-  ));
-  (uint8 v, bytes32 r, bytes32 s) = vm.sign(sellerPrivateKey, approvalHash);
-  bytes memory ownerApproval = abi.encodePacked(r, s, v);
+    bytes32 approvalHash = keccak256(abi.encodePacked(
+      marketplace._hashListing(listing),
+      marketplace._hashBid(bid)
+    ));
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(sellerPrivateKey, approvalHash);
+    bytes memory ownerApproval = abi.encodePacked(r, s, v);
 
-  vm.expectRevert("Bid too low");
-  marketplace.settleAuction(listing, bid, ownerApproval);
-}
+    vm.expectRevert("Bid too low");
+    marketplace.settleAuction(listing, bid, ownerApproval);
+  }
 
-function test_RevertUnauthorizedNFT() public {
-  // First create valid signatures
-  bytes memory listingSig = _signListing(
-    address(nft),
-    tokenId,
-    seller,
-    price,
-    sellerPrivateKey
-  );
+  function test_RevertUnauthorizedNFT() public {
+    // First create valid signatures
+    bytes memory listingSig = _signListing(
+      address(nft),
+      tokenId,
+      seller,
+      price,
+      sellerPrivateKey
+    );
 
-  bytes memory bidSig = _signBid(
-    address(nft),
-    tokenId,
-    buyer,
-    price,
-    address(token),
-    buyerPrivateKey
-  );
+    bytes memory bidSig = _signBid(
+      address(nft),
+      tokenId,
+      buyer,
+      price,
+      address(token),
+      buyerPrivateKey
+    );
 
-  NFTMarketplace.Listing memory listing = NFTMarketplace.Listing({
-    nftContract: address(nft),
-    tokenId: tokenId,
-    owner: seller,
-    minPrice: price,
-    signature: listingSig
-  });
+    NFTMarketplace.Listing memory listing = NFTMarketplace.Listing({
+      nftContract: address(nft),
+      tokenId: tokenId,
+      owner: seller,
+      minPrice: price,
+      signature: listingSig
+    });
 
-  NFTMarketplace.Bid memory bid = NFTMarketplace.Bid({
-    nftContract: address(nft),
-    tokenId: tokenId,
-    bidder: buyer,
-    amount: price,
-    paymentToken: address(token),
-    signature: bidSig
-  });
+    NFTMarketplace.Bid memory bid = NFTMarketplace.Bid({
+      nftContract: address(nft),
+      tokenId: tokenId,
+      bidder: buyer,
+      amount: price,
+      paymentToken: address(token),
+      signature: bidSig
+    });
 
-  bytes32 approvalHash = keccak256(abi.encodePacked(
-    marketplace._hashListing(listing),
-    marketplace._hashBid(bid)
-  ));
-  (uint8 v, bytes32 r, bytes32 s) = vm.sign(sellerPrivateKey, approvalHash);
-  bytes memory ownerApproval = abi.encodePacked(r, s, v);
+    bytes32 approvalHash = keccak256(abi.encodePacked(
+      marketplace._hashListing(listing),
+      marketplace._hashBid(bid)
+    ));
+    (uint8 v, bytes32 r, bytes32 s) = vm.sign(sellerPrivateKey, approvalHash);
+    bytes memory ownerApproval = abi.encodePacked(r, s, v);
 
-  // Remove NFT approval
-  vm.prank(seller);
-  nft.approve(address(0), tokenId);
+    // Remove NFT approval
+    vm.prank(seller);
+    nft.approve(address(0), tokenId);
 
-  // Expect the custom error ERC721InsufficientApproval from OpenZeppelin
-  vm.expectRevert(
-    abi.encodeWithSignature(
-      "ERC721InsufficientApproval(address,uint256)",
-      address(marketplace),
-      tokenId
-    )
-  );
-  marketplace.settleAuction(listing, bid, ownerApproval);
-}
+    // Expect the custom error ERC721InsufficientApproval from OpenZeppelin
+    vm.expectRevert(
+      abi.encodeWithSignature(
+        "ERC721InsufficientApproval(address,uint256)",
+        address(marketplace),
+        tokenId
+      )
+    );
+    marketplace.settleAuction(listing, bid, ownerApproval);
+  }
 
   // Helper function to create a listing signature
   function _signListing(
