@@ -1,27 +1,26 @@
 import { RequestHandler } from 'express'
 import { Bid, ListingParams } from '../types'
 import { storage } from '../storage'
-import { verifySignature } from '../utils'
+import { contractService } from '../services/contractService'
 
 export const getBids: RequestHandler<ListingParams> = (req, res) => {
-  const { nftContract, tokenId } = req.params;
-  const bids = storage.getBids(nftContract, tokenId);
+  const { nftContract, tokenId } = req.params
+  const bids = storage.getBids(nftContract, tokenId)
   res.json({ bids })
 }
 
 export const createBid: RequestHandler<ListingParams, any, Bid> = async (req, res) => {
   try {
-    const { nftContract, tokenId } = req.params;
-    const bid: Bid = req.body;
+    const { nftContract, tokenId } = req.params
+    const bid: Bid = req.body
 
-    if (bid.nftContract.toLowerCase() !== nftContract.toLowerCase() ||
-        bid.tokenId !== tokenId) {
+    if (bid.nftContract.toLowerCase() !== nftContract.toLowerCase() || bid.tokenId !== tokenId) {
       res.status(400).json({ error: 'Bid parameters mismatch' })
       
       return
     }
 
-    const isValid = await verifySignature(bid);
+    const isValid = await contractService.verifyBidSignature(bid)
     if (!isValid) {
       res.status(400).json({ error: 'Invalid signature' })
 

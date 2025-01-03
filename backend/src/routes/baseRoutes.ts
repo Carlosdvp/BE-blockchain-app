@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { contractService } from '../services/contractService'
 
 const router = Router()
 
@@ -61,12 +62,29 @@ router.get('/', (req, res) => {
 })
 
 // Health check endpoint
-router.get('/health', (req, res) => {
-  res.json({
-    status: 'healthy',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  })
+router.get('/health', async (req, res) => {
+  try {
+    // Check contract connection
+    const blockNumber = await contractService.getBlockNumber();
+    
+    res.json({
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      contract: {
+        address: process.env.MARKETPLACE_CONTRACT_ADDRESS,
+        network: process.env.NETWORK,
+        chainId: process.env.CHAIN_ID,
+        currentBlock: blockNumber
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'unhealthy',
+      error: 'Contract connection failed',
+      timestamp: new Date().toISOString()
+    });
+  }
 })
 
 export default router

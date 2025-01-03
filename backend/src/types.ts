@@ -4,6 +4,7 @@ export interface Listing {
   owner: string;
   minPrice: string;
   signature: string;
+  timestamp?: number;
 }
 
 export interface Bid {
@@ -13,6 +14,12 @@ export interface Bid {
   amount: string;
   paymentToken: string;
   signature: string;
+}
+
+export interface ContractConfig {
+  address: string
+  network: string
+  chainId: number
 }
 
 // In-memory storage types
