@@ -1,10 +1,8 @@
-import { Router } from 'express'
-import { contractService } from '../services/contractService'
+import { RequestHandler } from 'express'
+import { getContractService } from '../services/contractService'
 
-const router = Router()
-
-// Basic welcome route that shows API status
-router.get('/', (req, res) => {
+export const getHome: RequestHandler = (req, res) => {
+  // Handle content negotiation for home page
   res.format({
     'text/html': () => {
       res.send(`
@@ -29,23 +27,23 @@ router.get('/', (req, res) => {
           <body>
             <h1>NFT Marketplace API</h1>
             <p>Welcome to the NFT Marketplace API. The server is running successfully.</p>
+            
             <h2>Available Endpoints:</h2>
             <ul>
               <li><code>GET /api/listings</code> - Get all active listings</li>
               <li><code>POST /api/listings</code> - Create a new listing</li>
               <li><code>GET /api/listings/:nftContract/:tokenId/bids</code> - Get bids for a listing</li>
               <li><code>POST /api/listings/:nftContract/:tokenId/bids</code> - Place a bid on a listing</li>
+              <li><code>GET /health</code> - Check service health status</li>
             </ul>
           </body>
         </html>
       `)
     },
-    // For API clients expecting JSON
     'application/json': () => {
       res.json({
-        status: 'ok',
-        message: 'NFT Marketplace API is running',
-        version: '1.0.0',
+        name: 'NFT Marketplace API',
+        status: 'operational',
         endpoints: {
           listings: {
             get: '/api/listings',
@@ -54,37 +52,46 @@ router.get('/', (req, res) => {
           bids: {
             get: '/api/listings/:nftContract/:tokenId/bids',
             post: '/api/listings/:nftContract/:tokenId/bids'
+          },
+          system: {
+            health: '/health'
           }
         }
       })
+    },
+    default: () => {
+      res.json({ status: 'ok' })
     }
   })
-})
+}
 
-// Health check endpoint
-router.get('/health', async (req, res) => {
+export const getHealth: RequestHandler = async (req, res) => {
   try {
-    // Check contract connection
-    const blockNumber = await contractService.getBlockNumber();
+    // Get contract connection status
+    const contractService = getContractService()
+    const blockNumber = await contractService.getBlockNumber()
     
-    res.json({
+    const healthStatus = {
       status: 'healthy',
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      memory: process.memoryUsage(),
       contract: {
         address: process.env.MARKETPLACE_CONTRACT_ADDRESS,
-        network: process.env.NETWORK,
-        chainId: process.env.CHAIN_ID,
+        network: process.env.NETWORK || 'sepolia',
+        chainId: process.env.CHAIN_ID || '11155111',
         currentBlock: blockNumber
       }
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'unhealthy',
-      error: 'Contract connection failed',
-      timestamp: new Date().toISOString()
-    });
-  }
-})
+    }
 
-export default router
+    res.json(healthStatus)
+  } catch (error) {
+    console.error('Health check failed:', error)
+    
+    res.status(503).json({
+      status: 'unhealthy',
+      timestamp: new Date().toISOString(),
+      error: error instanceof Error ? error.message : 'Unknown error'
+    })
+  }
+}

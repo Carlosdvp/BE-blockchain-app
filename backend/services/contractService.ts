@@ -3,10 +3,11 @@ import { NFTMarketplaceABI } from '../abi/NFTMarketplace'
 import { Bid, Listing } from '../types'
 
 export class ContractService {
+  private static instance: ContractService
   private contract: ethers.Contract
   private provider: ethers.Provider
 
-  constructor() {
+  private constructor() {
     this.provider = ethers.getDefaultProvider(process.env.NETWORK || 'sepolia', {})
 
     this.contract = new ethers.Contract(
@@ -16,7 +17,31 @@ export class ContractService {
     )
   }
 
+  public static getInstance(): ContractService {
+    if (!ContractService.instance) {
+      ContractService.instance = new ContractService()
+    }
+    return ContractService.instance
+  }
+
+  private initialize() {
+    if (!this.contract || !this.provider) {
+      const contractAddress = process.env.MARKETPLACE_CONTRACT_ADDRESS;
+      if (!contractAddress || !ethers.isAddress(contractAddress)) {
+        throw new Error('Invalid or missing MARKETPLACE_CONTRACT_ADDRESS');
+      }
+
+      this.provider = ethers.getDefaultProvider(process.env.NETWORK || 'sepolia', {});
+      this.contract = new ethers.Contract(
+        contractAddress,
+        NFTMarketplaceABI,
+        this.provider
+      );
+    }
+  }
+
   async verifyListingSignature(listing: Listing): Promise<boolean> {
+    this.initialize()
     try {
       // Call the contract's signature verification function
       const hash = await this.contract._hashListing([
@@ -41,6 +66,7 @@ export class ContractService {
   }
 
   async verifyBidSignature(bid: Bid): Promise<boolean> {
+    this.initialize()
     try {
       const hash = await this.contract._hashBid([
         bid.nftContract,
@@ -65,8 +91,10 @@ export class ContractService {
   }
 
   async getBlockNumber(): Promise<number> {
+    this.initialize()
+
     return this.provider.getBlockNumber()
   }
 }
 
-export const contractService = new ContractService()
+export const getContractService = () => ContractService.getInstance()
