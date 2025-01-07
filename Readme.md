@@ -161,32 +161,56 @@ npm run test:integration
 ### Project Structure
 
 ```
-├── backend/                    # Backend application root
-│   ├── abi/                    # Contract ABI definitions
+├── backend/                   # Backend application root
+│   ├── abi/                   # Contract ABI definitions
 │   │   └── NFTMarketplace.ts
-│   ├── config/                 # Configuration files
+│   ├── config/                # Configuration files
 │   │   └── deployment.ts
-│   ├── controllers/            # API endpoint handlers
+│   ├── controllers/           # API endpoint handlers
 │   │   ├── baseController.ts
 │   │   ├── bidController.ts
 │   │   └── listingController.ts
-│   ├── deployments/            # Deployment artifacts
+│   ├── deployments/           # Deployment artifacts
 │   │   └── sepolia-deployment.json
-│   ├── routes/                 # Express route definitions
+│   ├── routes/                # Express route definitions
 │   │   ├── baseRoutes.ts
 │   │   ├── bidRoutes.ts
 │   │   └── listingRoutes.ts
-│   ├── scripts/                # Helper scripts
+│   ├── scripts/               # Helper scripts
 │   │   └── integrationTest.ts
-│   ├── services/               # Business logic services
+│   ├── services/              # Business logic services
 │   │   └── contractService.ts
-│   ├── app.ts                  # Express application setup
-│   ├── index.ts                # Application entry point
-│   ├── storage.ts              # In-memory storage implementation
-│   ├── tsconfig.json           # TypeScript configuration
-│   ├── types.ts                # Type definitions
-│   └── package.json            # Backend dependencies
+│   ├── app.ts                 # Express application setup
+│   ├── index.ts               # Application entry point
+│   ├── storage.ts             # In-memory storage implementation
+│   ├── tsconfig.json          # TypeScript configuration
+│   ├── types.ts               # Type definitions
+│   └── package.json           # Backend dependencies
+├── broadcast/                 # Foundry deployment broadcasts
+├── cache/                     # Foundry compilation cache
+├── lib/                       # Smart contract dependencies
+├── out/                       # Compiled contract artifacts
+├── script/                    # Contract deployment scripts
+│   └── NFTMarketplace.s.sol
+├── src/                       # Smart contract source code
+│   └── NFTMarketplace.sol
+├── test/                      # Contract test files
+│   └── NFTMarketplace.t.sol
+├── .env.example               # Environment variables template
+├── .gitignore                 # Git ignore rules
+├── .gitmodules                # Git submodules configuration
+├── foundry.toml               # Foundry configuration
+├── README.md                  # Project documentation
+└── remappings.txt             # Solidity import remappings
 ```
+
+This structure represents the complete Foundry project with an Express backend service. The smart contract development is managed by Foundry's toolchain, while the backend service handles the off-chain storage and API endpoints. Key components are organized as follows:
+
+- Smart Contract Files: Located in `src/` and `test/`, following Foundry conventions
+- Deployment Scripts: In the `script/` directory using Foundry's scripting capabilities
+- Backend Service: Complete Node.js/Express application in the `backend/` directory
+- Configuration: Environment variables, Foundry settings, and deployment configurations
+- Dependencies: Managed through both `lib/` for contracts and `node_modules` for backend
 
 ## Security Considerations
 

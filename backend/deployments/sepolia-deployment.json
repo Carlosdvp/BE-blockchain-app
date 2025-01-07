@@ -1,7 +1,7 @@
 {
-  "chainId": 11155111,
-  "network": "sepolia",
-  "marketplace": "0x0A20b2ca38771D1CcB5f9D3b924DDf401F7c07e1",
-  "deployer": "0x844375000696aFdd2A24262b19F31689a0acEF97",
-  "timestamp": 1735774080
+	"chainId": 11155111,
+	"network": "sepolia",
+	"marketplace": "0x0A20b2ca38771D1CcB5f9D3b924DDf401F7c07e1",
+	"deployer": "0x844375000696aFdd2A24262b19F31689a0acEF97",
+	"timestamp": 1735774080
 }
