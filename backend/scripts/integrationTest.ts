@@ -1,5 +1,9 @@
 import axios from 'axios'
 import { ethers } from 'ethers'
+import dotenv from 'dotenv'
+import { NFTMarketplaceABI } from '../abi/NFTMarketplace'
+
+dotenv.config()
 
 /**
  * Simple integration test for NFT Marketplace
@@ -9,38 +13,13 @@ import { ethers } from 'ethers'
  * 3. Verifying in-memory storage works
  */
 
-// Configuration for EIP-712 typed data signing
-const MARKETPLACE_CONFIG = {
-  // Base configuration
+const TEST_CONFIG = {
   baseUrl: 'http://localhost:3000',
   testNftAddress: '0x1234567890123456789012345678901234567890',
   testTokenAddress: '0x2234567890123456789012345678901234567890',
-  
-  // EIP-712 Domain
-  domain: {
-    name: 'NFTMarketplace',
-    version: '1',
-    chainId: 11155111, // Sepolia
-    verifyingContract: process.env.MARKETPLACE_CONTRACT_ADDRESS
-  },
-
-  // EIP-712 Types
-  types: {
-    Listing: [
-      { name: 'nftContract', type: 'address' },
-      { name: 'tokenId', type: 'uint256' },
-      { name: 'owner', type: 'address' },
-      { name: 'minPrice', type: 'uint256' }
-    ],
-    Bid: [
-      { name: 'nftContract', type: 'address' },
-      { name: 'tokenId', type: 'uint256' },
-      { name: 'bidder', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-      { name: 'paymentToken', type: 'address' }
-    ]
-  }
 }
+
+const CONTRACT_ABI = NFTMarketplaceABI
 
 async function testMarketplace() {
   console.log('Starting marketplace integration test...')
@@ -55,94 +34,114 @@ async function testMarketplace() {
       buyer: buyer.address
     })
 
-    // Test 1: Create and sign a listing
-    const listingData = {
-      nftContract: MARKETPLACE_CONFIG.testNftAddress,
-      tokenId: '1',
-      owner: seller.address,
-      minPrice: ethers.parseEther('0.1').toString()
+    const contractAddress = process.env.MARKETPLACE_CONTRACT_ADDRESS
+    if (!contractAddress) {
+      throw new Error('MARKETPLACE_CONTRACT_ADDRESS environment variable is not set')
     }
 
-    // Sign listing with EIP-712
-    console.log('\nSigning listing...')
-
-    const listingSignature = await seller.signTypedData(
-      MARKETPLACE_CONFIG.domain,
-      { Listing: MARKETPLACE_CONFIG.types.Listing },
-      listingData
+    // Create a provider and contract instance for getting the correct hash
+    const provider = ethers.getDefaultProvider(process.env.NETWORK || 'sepolia')
+    const contract = new ethers.Contract(
+      contractAddress,
+      CONTRACT_ABI,
+      provider
     )
-    
+
+    // Test 1: Create and submit listing
+    console.log('\nPreparing listing...')
+    const listing = {
+      nftContract: TEST_CONFIG.testNftAddress,
+      tokenId: '1',
+      owner: seller.address,
+      minPrice: ethers.parseEther('0.1').toString(),
+      signature: '0x'
+    }
+
+    // Get the listing hash using the contract's function
+    const listingHash = await contract._hashListing(listing)
+    console.log('Listing hash generated:', listingHash)
+
+    const listingSignature = await seller.signMessage(ethers.getBytes(listingHash))
+    console.log('Listing signed')
+
+    // Update the listing data with the real signature
+    const signedListing = {
+      ...listing,
+      signature: listingSignature
+    }
+      
     // Submit listing to API
+    console.log('\nSubmitting listing...')
     try {
-      const createListingResponse = await axios.post(
-        `${MARKETPLACE_CONFIG.baseUrl}/api/listings`,
-        {
-          ...listingData,
-          signature: listingSignature
-        }
-      )
-      console.log('Listing created:', createListingResponse.data)
+      const listingResponse = await axios.post(`${TEST_CONFIG.baseUrl}/api/listings`, signedListing)
+
+      console.log('Listing created:', listingResponse.data)
     } catch (error: any) {
       console.error('Listing creation failed:', {
         status: error.response?.status,
         data: error.response?.data
       })
+
       throw error
     }
 
     // Test 2: Create and sign a bid
-    const bidData = {
-      nftContract: listingData.nftContract,
-      tokenId: listingData.tokenId,
+    console.log('\nPreparing bid...')
+
+    const bid = {
+      nftContract: listing.nftContract,
+      tokenId: listing.tokenId,
       bidder: buyer.address,
-      amount: listingData.minPrice,
-      paymentToken: MARKETPLACE_CONFIG.testTokenAddress
+      amount: listing.minPrice,
+      paymentToken: TEST_CONFIG.testTokenAddress,
+      signature: '0x'
     }
 
-    // Sign bid with EIP-712
-    console.log('\nSigning bid...')
+    // Get the bid hash from the contract and sign it
+    const bidHash = await contract._hashBid(bid)
+    console.log('Bid hash generated:', bidHash)
 
-    const bidSignature = await buyer.signTypedData(
-      MARKETPLACE_CONFIG.domain,
-      { Bid: MARKETPLACE_CONFIG.types.Bid },
-      bidData
-    )
+    const bidSignature = await buyer.signMessage(ethers.getBytes(bidHash))
+    console.log('Bid signed')
 
-    // Submit bid
+    // Update the bid data with the real signature
+    const signedBid = {
+      ...bid,
+      signature: bidSignature
+    }
+
+    // Submit bid to API
     console.log('\nSubmitting bid...')
 
     try {
-      const createBidResponse = await axios.post(
-        `${MARKETPLACE_CONFIG.baseUrl}/api/listings/${bidData.nftContract}/${bidData.tokenId}/bids`,
-        {
-          ...bidData,
-          signature: bidSignature
-        }
+      const bidResponse = await axios.post(
+        `${TEST_CONFIG.baseUrl}/api/listings/${bid.nftContract}/${bid.tokenId}/bids`,
+        signedBid
       )
-      console.log('Bid created:', createBidResponse.data)
+      console.log('Bid created:', bidResponse.data)
+
     } catch (error: any) {
       console.error('Bid creation failed:', {
         status: error.response?.status,
         data: error.response?.data
       })
+
       throw error
     }
 
     // Test 3: Verify storage is working
     console.log('\nVerifying storage...')
 
-    const listings = await axios.get(`${MARKETPLACE_CONFIG.baseUrl}/api/listings`)
-    const bids = await axios.get(
-      `${MARKETPLACE_CONFIG.baseUrl}/api/listings/${bidData.nftContract}/${bidData.tokenId}/bids`
-    )
+    const listings = await axios.get(`${TEST_CONFIG.baseUrl}/api/listings`)
+    const bids = await axios.get(`${TEST_CONFIG.baseUrl}/api/listings/${bid.nftContract}/${bid.tokenId}/bids`)
 
     const results = {
       listingsFound: listings.data.listings.length,
       bidsFound: bids.data.bids.length,
       listingVerified: listings.data.listings.some(
-        (l: any) => l.tokenId === listingData.tokenId && l.nftContract.toLowerCase() === listingData.nftContract.toLowerCase()
+        (l: any) => l.tokenId === signedListing.tokenId && l.nftContract.toLowerCase() === signedListing.nftContract.toLowerCase()
       ),
-      bidVerified: bids.data.bids.some((b: any) => b.bidder.toLowerCase() === bidData.bidder.toLowerCase() && b.amount === bidData.amount)
+      bidVerified: bids.data.bids.some((b: any) => b.bidder.toLowerCase() === signedBid.bidder.toLowerCase() && b.amount === signedBid.amount)
     }
 
     console.log('\nTest Results:', results)
@@ -154,5 +153,9 @@ async function testMarketplace() {
   }
 }
 
-// Run the test
-testMarketplace().catch(console.error)
+// Run the test if this file is executed directly
+if (require.main === module) {
+  testMarketplace()
+}
+
+export { testMarketplace }

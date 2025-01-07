@@ -14,9 +14,8 @@ class Storage {
     return `${nftContract.toLowerCase()}-${tokenId}`
   }
 
-  // Listing operations
-  addListing(listing: StoredListing): void {
-    const key = this.getListingKey(listing.nftContract, listing.tokenId)
+  addListing(nftContract: string, tokenId: string, listing: any) {
+    const key = `${nftContract}-${tokenId}`
     this.listings.set(key, listing)
   }
 
@@ -37,12 +36,12 @@ class Storage {
   }
 
   // Bid operations
-  addBid(bid: StoredBid): void {
-    const key = this.getListingKey(bid.nftContract, bid.tokenId)
-    const existingBids= this.bids.get(key) || []
+  addBid(nftContract: string, tokenId: string, bid: any) {
+    const key = `${nftContract}-${tokenId}`
+    const bids = this.bids.get(key) || []
 
-    existingBids.push(bid)
-    this.bids.set(key, existingBids)
+    bids.push(bid)
+    this.bids.set(key, bids)
   }
 
   getBids(nftContract: string, tokenId: string): StoredBid[] {

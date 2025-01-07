@@ -51,10 +51,7 @@ export class ContractService {
         listing.minPrice
       ])
       
-      const recoveredAddress = ethers.verifyMessage(
-        ethers.getBytes(hash),
-        listing.signature
-      )
+      const recoveredAddress = ethers.recoverAddress(hash, listing.signature)
 
       return recoveredAddress.toLowerCase() === listing.owner.toLowerCase()
 

@@ -1,8 +1,6 @@
 import { RequestHandler } from 'express'
 import { Bid, ListingParams } from '../types'
 import { storage } from '../storage'
-import { getContractService  } from '../services/contractService'
-import { ethers } from 'ethers'
 
 export const getBids: RequestHandler<ListingParams> = (req, res) => {
   try {
@@ -21,51 +19,28 @@ export const getBids: RequestHandler<ListingParams> = (req, res) => {
 
 export const createBid: RequestHandler<ListingParams, any, Bid> = async (req, res): Promise<void> => {
   try {
-    const contractService = getContractService()
     const { nftContract, tokenId } = req.params
-    const bid: Bid = req.body
 
-    console.log('Received bid creation request:', {
-      ...req.body,
-      signature: req.body.signature.substring(0, 10) + '...' // Truncate for logging
-    })
-
-    if (bid.nftContract.toLowerCase() !== nftContract.toLowerCase() || bid.tokenId !== tokenId) {
-      res.status(400).json({ error: 'Bid parameters mismatch with URL' })
-
-      return
-    }
-
+    // Validate that we have a listing for this NFT
     const listing = storage.getListing(nftContract, tokenId)
     if (!listing) {
       res.status(404).json({ error: 'Listing not found' })
+      
       return
     }
 
-    console.log('Verifying bid signature...')
-    const isValid = await contractService.verifyBidSignature(bid)
-    if (!isValid) {
-      console.log('Signature verification failed for bid')
-
-      res.status(400).json({ error: 'Invalid bid signature' })
-      return
-    }
-
-    const storedBid = {
-      ...bid,
+    // Add the bid with timestamp
+    const bidWithTimestamp = {
+      ...req.body,
       timestamp: Date.now()
     }
-    storage.addBid(storedBid)
 
+    storage.addBid(nftContract, tokenId, req.body)
     res.status(201).json({ 
-      bid: storedBid,
-      message: 'Bid created successfully'
+      message: 'Bid created successfully',
+      bid: bidWithTimestamp 
     })
   } catch (error) {
-    console.error('Error creating bid:', error)
-    res.status(500).json({ 
-      error: 'Failed to create bid',
-      details: error instanceof Error ? error.message : 'Unknown error' 
-    })
+      res.status(500).json({ error: 'Failed to create bid' })
   }
 }

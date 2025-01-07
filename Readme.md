@@ -1,311 +1,196 @@
-## Foundry
+# NFT Marketplace with Off-Chain Auctions
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This project implements a gas-efficient NFT marketplace that uses off-chain signatures to enable single-transaction trades between ERC721 tokens and ERC20 tokens. The system consists of a Solidity smart contract for on-chain settlement and a TypeScript/Express backend for managing off-chain listings and bids.
 
-Foundry consists of:
+## System Architecture
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+The marketplace operates through a combination of:
 
-## Documentation
+- Smart Contract: Handles signature verification and final trade settlement
+- Express Backend: Stores listings and bids in memory, providing REST API endpoints
+- Off-chain Signatures: Enables gasless listing creation and bidding
 
-https://book.getfoundry.sh/
+### Workflow
 
-## Usage
+1. NFT owner approves the marketplace contract to transfer their NFT
+2. Owner creates and signs a listing with a minimum price
+3. Interested buyer approves ERC20 tokens to the marketplace
+4. Buyer creates and signs a bid for the auction
+5. If owner accepts the bid, they sign an approval
+6. Anyone can execute the trade by submitting both signatures to the contract
 
-### Build
+## Smart Contract
 
-```shell
-$ forge build
+The NFTMarketplace contract is deployed and verified on Sepolia testnet:
+
+- Address: `0x0A20b2ca38771D1CcB5f9D3b924DDf401F7c07e1`
+- Network: Sepolia (Chain ID: 11155111)
+- [View on Etherscan](https://sepolia.etherscan.io/address/0x0A20b2ca38771D1CcB5f9D3b924DDf401F7c07e1)
+
+### Key Features
+
+- EIP-712 compliant signature verification
+- Single-transaction settlement
+- Support for any ERC721 and ERC20 tokens
+- Gas-optimized operations
+
+## Backend Service
+
+The Express backend provides a RESTful API for managing listings and bids, with all data stored in memory as specified.
+
+### Setup and Installation
+
+1. Clone the repository:
+```bash
+git clone [repository-url]
+cd nft-marketplace
 ```
 
-### Test
-
-```shell
-$ forge test
+2. Install dependencies:
+```bash
+npm install
 ```
 
-### Format
-
-```shell
-$ forge fmt
+3. Configure environment variables by copying the example file:
+```bash
+cp .env.example .env
 ```
 
-### Gas Snapshots
+4. Start the service:
+```bash
+# Development mode
+npm run start:dev
 
-```shell
-$ forge snapshot
+# Production mode
+npm run build
+npm start
 ```
 
-### Anvil
+### API Endpoints
 
-```shell
-$ anvil
+#### Create Listing
+```
+POST /api/listings
+
+Request Body:
+{
+    "nftContract": "0x...",
+    "tokenId": "1",
+    "owner": "0x...",
+    "minPrice": "1000000000000000000",
+    "signature": "0x..."
+}
 ```
 
-### Deploy
+#### Get All Listings
+```
+GET /api/listings
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+Response:
+{
+    "listings": [
+        {
+            "nftContract": "0x...",
+            "tokenId": "1",
+            "owner": "0x...",
+            "minPrice": "1000000000000000000",
+            "signature": "0x...",
+            "timestamp": 1234567890
+        }
+    ]
+}
 ```
 
-### Cast
+#### Create Bid
+```
+POST /api/listings/:nftContract/:tokenId/bids
 
-```shell
-$ cast <subcommand>
+Request Body:
+{
+    "bidder": "0x...",
+    "amount": "1000000000000000000",
+    "paymentToken": "0x...",
+    "signature": "0x..."
+}
 ```
 
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+#### Get Bids for Listing
 ```
-# Technical Design Implementation Steps -- Summary
-
-## Stage 1: Project Setup and Configuration
-
-Stage 1 setup provides us with:
-
-    - A properly configured Foundry environment
-    - Essential dependencies
-    - Basic contract structure
-    - Initial test framework
-    - Clean configuration files
-
-The initial structure is minimal but extensible, following best practices while maintaining simplicity. We can now move on to Stage 2 where we'll implement the core smart contract functionality.
-
-## Stage 2: Core Smart Contract Development
-
-- Created core NFTMarketplace contract
-- Implemented EIP-712 signature verification
-- Added listing and bid structures
-- Implemented auction settlement logic
-- Created comprehensive test suite
-    - Implemented Foundry tests for smart contract
-    - Added proper error handling
-
-## Stage 3: Off-chain Backend
-
-Approach for the backend system: We need to create a simple Express.js server that handles listings and bids in memory, following the requirements of not using persistent storage. The server will need to interface with both the blockchain and our frontend users.
-
-Basic server file structure
-
-src/
-├── controllers/      # Business logic for handling requests
-│   ├── listingController.ts
-│   └── bidController.ts
-├── routes/          # Route definitions and middleware
-│   ├── listingRoutes.ts
-│   └── bidRoutes.ts
-├── server.ts        # Main Express app configuration
-└── types.ts         # Our existing types file
-
-- Established TypeScript/Express project structure
-- Implemented in-memory storage system
-- Created controller and route organization
-- Added signature verification utilities
-- Set up proper project architecture
-    - Created type-safe Express endpoints
-    - Set up development environment
-
-## Stage 4: Testing and Verification
-
-This stage focused on creating comprehensive tests, deploying to Sepolia, and verifying contract functionality.
-
-### Forge deployment command
-
-forge script script/NFTMarketplace.s.sol:NFTMarketplaceScript \
-    --rpc-url https://eth-sepolia.g.alchemy.com/v2/IEJ6ax3RNiwZpJ6VHA_3LFgbbDOz3syX \
-    --fork-url https://eth-sepolia.g.alchemy.com/v2/IEJ6ax3RNiwZpJ6VHA_3LFgbbDOz3syX \
-    --broadcast \
-    --verify \
-    -vvvv
-
-forge script script/NFTMarketplace.s.sol:NFTMarketplaceScript \
-    --rpc-url $SEPOLIA_RPC_URL \
-    --sender $DEPLOYER_ADDRESS \
-    --private-key $PRIVATE_KEY \
-    --broadcast \
-    -vvvv
-
-forge script script/NFTMarketplace.s.sol:NFTMarketplaceScript \
-    --rpc-url https://eth-sepolia.g.alchemy.com/v2/IEJ6ax3RNiwZpJ6VHA_3LFgbbDOz3syX \
-    --fork-url https://eth-sepolia.g.alchemy.com/v2/IEJ6ax3RNiwZpJ6VHA_3LFgbbDOz3syX \
-    --sender $DEPLOYER_ADDRESS \
-    --private-key $PRIVATE_KEY \
-    --broadcast \
-    --verify \
-    -vvvv
-
-### Summary for this stage
-
-1. Successfully deployed the contract
-2. Got verification working
-3. Have a proper contract address for our backend integration
-
-
-
-## Stage 5: Documentation and Cleanup
-
-The final stage involves documenting the system, cleaning up code, and preparing for deployment.
-
-
---------------------------------------------------------------------------------------------------------------------------
-
-# Progress Report and Remaining Tasks -- prev
-
-We have successfully completed several major milestones in our implementation of the off-chain NFT marketplace system. The most significant achievement has been developing and deploying a secure, gas-efficient smart contract that enables single-transaction trading between ERC721 and ERC20 tokens using off-chain signatures.
-
-Our smart contract implementation features robust signature verification for listings, bids, and owner approvals. This ensures that all parties must cryptographically sign their intentions before any trade can be executed. We've also implemented proper error handling and event emissions for better transaction tracking and user feedback.
-
-The backend infrastructure has been established with a clean architecture that separates concerns effectively. Our Express server uses TypeScript for type safety and includes properly structured routes and controllers. Following the requirements, we've implemented an in-memory storage system that maintains listings and bids without persistent storage.
-
-Most recently, we've achieved a successful deployment to the Sepolia testnet at address 0x0A20b2ca38771D1CcB5f9D3b924DDf401F7c07e1. The contract has been verified on Etherscan, making it transparent and allowing users to interact with it directly through the block explorer.
-
-## Matching Against Original Plan
-
-Let's examine how our progress aligns with our original five-stage plan:
-
-Stage 1: Project Setup and Configuration
-✓ Completed
-- Established Foundry development environment
-- Set up TypeScript/Express backend
-- Configured necessary development tools
-- Implemented proper project structure
-
-Stage 2: Core Smart Contract Development
-✓ Completed
-- Implemented NFTMarketplace contract with signature verification
-- Added comprehensive test suite, all contract functions tested and working
-- Successfully deployed to Sepolia
-- Contract verified on Etherscan
-
-Stage 3: Off-chain Backend Implementation
-⚠️ Partially Complete
-- Express server with TypeScript implemented
-- In-memory storage system working
-- Routes and controllers established
-- Still needs integration testing with deployed contract
-
-Stage 4: Testing and Verification
-⚠️ In Progress
-- Smart contract tests completed
-- Contract verification successful
-- Integration tests pending
-- End-to-end testing pending
-
-Stage 5: Documentation and Cleanup
-🔄 Not Started
-- API documentation pending
-- Deployment documentation needed
-- Code cleanup and final review required
-
-## Next Steps
-
-Based on our progress, our next immediate priority should be completing the backend integration with our newly deployed contract. This involves:
-
-1. Testing the backend API endpoints against the deployed contract:
-   - Creating test listings with valid signatures
-   - Submitting bids with proper ERC20 approvals
-   - Verifying signature verification matches on-chain behavior
-
-2. Implementing proper error handling for contract interactions:
-   - Handling failed transactions
-   - Managing signature verification errors
-   - Providing meaningful error messages to users
-
-3. Adding monitoring for contract events:
-   - Setting up event listeners for successful trades
-   - Updating in-memory storage based on on-chain events
-   - Implementing proper error recovery for missed events
-
-4. Creating a simple test suite for the API:
-   - Testing listing creation and retrieval
-   - Verifying bid submission and validation
-   - Ensuring proper signature handling
-
-# Current Status
-
-## The project now has:
-
-- A functional smart contract deployed on Sepolia
-- A working backend server with proper architecture
-- Contract integration via ethers.js
-- Basic API endpoints for listings and bids
-- In-memory storage as required
-
-## Comparison with Original Requirements
-
-From the task document:
-1. Single transaction trades ✓
-  - Smart contract supports this via settleAuction function
-  - Signature verification implemented
-2. Off-chain system requirements:
-  - Node.js/TypeScript ✓
-  - Express.js server ✓
-  - In-memory storage ✓
-  - HTTP interface ✓
-3. Technical requirements:
-  - Foundry used ✓
-  - Solidity >= 0.8 ✓
-  - Clean code and structure ✓
-
-## Remaining Tasks
-
-4. Signature Verification Flow (High Priority):
-  - Implement EIP-712 signature creation in test suite
-  - Test listing creation with valid signatures 
-  - Test bid creation with valid signatures
-  - Verify owner approval process
-
-5. End-to-End Testing:
-  - Create test scripts for full workflow
-  - Test with actual ERC721 and ERC20 tokens
-  - Document test scenarios
-
-6. Documentation:
-  - Add setup instructions to README
-  - Document API endpoints
-  - Add environment variable documentation
-  - Include example usage
-
-
-
-## Next Steps (Prioritized)
-
-Immediate (Today):
-
-Complete integration test script
-Test listing creation with proper signatures
-Test bid submission
-Verify signature validation matches contract
-
-
-Short-term (Next):
-
-Test complete trade flow
-Add basic API documentation
-Create example usage instructions
-
-
-Final Steps:
-
-Clean up code and comments
-Update README with setup instructions
-Package project for submission
-
-
-
-Success Criteria
-To consider the project complete, we need to demonstrate:
-
-Creating a listing with valid signature ⏳
-Submitting a bid with valid signature ⏳
-Completing a trade with owner approval ⏳
-All operations working with in-memory storage ✓
-
-The project is well-positioned to complete all requirements, with the main focus now being on implementing and testing the signature verification flow and documenting the system.
+GET /api/listings/:nftContract/:tokenId/bids
+
+Response:
+{
+    "bids": [
+        {
+            "bidder": "0x...",
+            "amount": "1000000000000000000",
+            "paymentToken": "0x...",
+            "signature": "0x...",
+            "timestamp": 1234567890
+        }
+    ]
+}
+```
+
+### Environment Variables
+
+The following environment variables are required:
+
+```
+PORT=3000                   # Server port
+HOST=localhost              # Server host
+MARKETPLACE_CONTRACT_ADDRESS=0x0A20b2ca38771D1CcB5f9D3b924DDf401F7c07e1
+CHAIN_ID=11155111          # Sepolia testnet
+NETWORK=sepolia            # Network name
+```
+
+## Development
+
+### Running Tests
+
+The project includes both smart contract tests (using Foundry) and backend integration tests:
+
+```bash
+# Run smart contract tests
+forge test
+
+# Run backend integration tests
+npm run test:integration
+```
+
+### Project Structure
+
+```
+├── backend/                    # Backend application root
+│   ├── abi/                    # Contract ABI definitions
+│   │   └── NFTMarketplace.ts
+│   ├── config/                 # Configuration files
+│   │   └── deployment.ts
+│   ├── controllers/            # API endpoint handlers
+│   │   ├── baseController.ts
+│   │   ├── bidController.ts
+│   │   └── listingController.ts
+│   ├── deployments/            # Deployment artifacts
+│   │   └── sepolia-deployment.json
+│   ├── routes/                 # Express route definitions
+│   │   ├── baseRoutes.ts
+│   │   ├── bidRoutes.ts
+│   │   └── listingRoutes.ts
+│   ├── scripts/                # Helper scripts
+│   │   └── integrationTest.ts
+│   ├── services/               # Business logic services
+│   │   └── contractService.ts
+│   ├── app.ts                  # Express application setup
+│   ├── index.ts                # Application entry point
+│   ├── storage.ts              # In-memory storage implementation
+│   ├── tsconfig.json           # TypeScript configuration
+│   ├── types.ts                # Type definitions
+│   └── package.json            # Backend dependencies
+```
+
+## Security Considerations
+
+- All signatures are verified using EIP-712 for improved security
+- Contract prevents signature reuse through proper hash construction
+- Backend implements basic request validation and error handling
+- In-memory storage is cleaned up periodically to prevent memory leaks
